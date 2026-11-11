@@ -1,0 +1,72 @@
+---
+title: Quick Config
+description: Build and download a ready-to-run WinUtil configuration in one quick flow.
+template: splash
+prev: false
+next: false
+---
+
+This is a quick-access configuration page for WinUtil.
+
+Use the form below to build a config JSON, copy the result, or download it as a file.
+
+<div id="quick-config-app"></div>
+
+<script>
+  const app = document.getElementById('quick-config-app');
+  if (app) {
+    app.innerHTML = `
+      <style>
+        .qc-wrap { font-family: system-ui, sans-serif; max-width: 980px; margin: 2rem 0; }
+        .qc-box { background: #111827; color: #f3f4f6; border: 1px solid #374151; border-radius: 14px; padding: 1rem; }
+        .qc-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+        .qc-btn { border: 1px solid #4b5563; background: #1f2937; color: white; border-radius: 10px; padding: 0.7rem 1rem; cursor: pointer; }
+        .qc-btn.primary { background: #2563eb; border-color: #2563eb; }
+        textarea { width: 100%; min-height: 220px; border-radius: 12px; border: 1px solid #374151; background: #0b1220; color: #e5e7eb; padding: 1rem; resize: vertical; }
+      </style>
+      <div class="qc-wrap">
+        <div class="qc-box">
+          <h3>WinUtil quick setup</h3>
+          <p>Select the items you want to include in the config.</p>
+          <div class="qc-row">
+            <label><input type="checkbox" checked /> Applications</label>
+            <label><input type="checkbox" checked /> Tweaks</label>
+            <label><input type="checkbox" checked /> Features</label>
+            <label><input type="checkbox" /> AppX removal</label>
+          </div>
+          <div class="qc-row">
+            <button class="qc-btn primary" type="button">Download config</button>
+            <button class="qc-btn" type="button">Copy JSON</button>
+            <button class="qc-btn" type="button">Share link</button>
+          </div>
+          <div class="qc-row">
+            <textarea readonly>[
+  "WPFInstall7zip",
+  "WPFTweaksTelemetry",
+  "WPFFeatureNetFx3",
+  "WPFAppxTeams"
+]</textarea>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const downloadBtn = app.querySelector('.qc-btn.primary');
+    const textarea = app.querySelector('textarea');
+    if (downloadBtn && textarea) {
+      downloadBtn.onclick = () => {
+        const blob = new Blob([textarea.value], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'winutil-config.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+    }
+  }
+</script>
+
+- Share link keeps the same selection in a browser URL for quick reuse.
+- Download config generates a JSON file that can be run with `-Config` in an elevated PowerShell window.
+- The generated command uses the WinUtil release tied to the catalog, so older or newer keys remain compatible with that exact version.
