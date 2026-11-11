@@ -6,67 +6,217 @@ prev: false
 next: false
 ---
 
-This is a quick-access configuration page for WinUtil.
+import { useMemo, useState } from 'react';
 
-Use the form below to build a config JSON, copy the result, or download it as a file.
+const apps = [
+  { id: 'equipos', label: 'Equipes', icon: '▣' },
+  { id: 'teamspeak3', label: 'TeamSpeak 3', icon: '▣' },
+  { id: 'teamspeak6', label: 'TeamSpeak 6', icon: '▣' },
+  { id: 'telegram', label: 'Telegram', icon: '▣' },
+];
 
-<div id="quick-config-app"></div>
-
-<script>
-  const app = document.getElementById('quick-config-app');
-  if (app) {
-    app.innerHTML = `
-      <style>
-        .qc-wrap { font-family: system-ui, sans-serif; max-width: 980px; margin: 2rem 0; }
-        .qc-box { background: #111827; color: #f3f4f6; border: 1px solid #374151; border-radius: 14px; padding: 1rem; }
-        .qc-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
-        .qc-btn { border: 1px solid #4b5563; background: #1f2937; color: white; border-radius: 10px; padding: 0.7rem 1rem; cursor: pointer; }
-        .qc-btn.primary { background: #2563eb; border-color: #2563eb; }
-        textarea { width: 100%; min-height: 220px; border-radius: 12px; border: 1px solid #374151; background: #0b1220; color: #e5e7eb; padding: 1rem; resize: vertical; }
-      </style>
-      <div class="qc-wrap">
-        <div class="qc-box">
-          <h3>WinUtil quick setup</h3>
-          <p>Select the items you want to include in the config.</p>
-          <div class="qc-row">
-            <label><input type="checkbox" checked /> Applications</label>
-            <label><input type="checkbox" checked /> Tweaks</label>
-            <label><input type="checkbox" checked /> Features</label>
-            <label><input type="checkbox" /> AppX removal</label>
-          </div>
-          <div class="qc-row">
-            <button class="qc-btn primary" type="button">Download config</button>
-            <button class="qc-btn" type="button">Copy JSON</button>
-            <button class="qc-btn" type="button">Share link</button>
-          </div>
-          <div class="qc-row">
-            <textarea readonly>[
+const defaultJson = `[
   "WPFInstall7zip",
   "WPFTweaksTelemetry",
-  "WPFFeatureNetFx3",
-  "WPFAppxTeams"
-]</textarea>
+  "WPFFeatureNetFx3"
+]`;
+
+const buildCommand = `& ([ScriptBlock]::Create((irm "https://github.com/ChrisTitusTech/winutil/releases/download/26.10.28/winutil.ps1"))) -Config "$env:USERPROFILE\\Downloads\\winutil-config.json"`;
+
+export default function QuickConfigPage() {
+  const [selected, setSelected] = useState(() => new Set(['equipos', 'teamspeak3', 'telegram']));
+  const [copied, setCopied] = useState(null);
+
+  const selectedCount = selected.size;
+  const json = useMemo(() => {
+    const keys = [
+      'WPFInstall7zip',
+      'WPFTweaksTelemetry',
+      'WPFFeatureNetFx3',
+      'WPFAppxTeams',
+    ];
+    return JSON.stringify(keys.slice(0, Math.max(1, selectedCount)), null, 2);
+  }, [selectedCount]);
+
+  const toggle = (id) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const copy = async (value, label) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(label);
+      window.setTimeout(() => setCopied(null), 1500);
+    } catch {
+      setCopied(null);
+    }
+  };
+
+  const download = () => {
+    const blob = new Blob([json], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'winutil-config.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  return (
+    <div style={{
+      background: '#060b11',
+      minHeight: '100vh',
+      color: '#f3f5f7',
+      fontFamily: 'Segoe UI, sans-serif',
+      padding: '0 0 2rem 0',
+    }}>
+      <div style={{
+        maxWidth: '1600px',
+        margin: '0 auto',
+        padding: '1.5rem 1rem 0',
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gap: '0.9rem',
+          background: '#0d141b',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '14px',
+          overflow: 'hidden',
+          padding: '0.8rem 0.7rem',
+        }}>
+          {apps.map((app) => {
+            const active = selected.has(app.id);
+            return (
+              <button
+                key={app.id}
+                onClick={() => toggle(app.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.8rem',
+                  background: active ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: '10px',
+                  color: '#f3f5f7',
+                  padding: '0.9rem 1rem',
+                  minHeight: '58px',
+                  cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontSize: '1.05rem', fontWeight: 500 }}>{app.label}</span>
+                <span style={{ opacity: 0.9, fontSize: '1.2rem' }}>{app.icon}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{
+          marginTop: '2rem',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '16px',
+          padding: '1.4rem 1.2rem 1.1rem',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#f3f5f7' }}>
+              {selectedCount === 0 ? '0 selecionado' : `${selectedCount} selecionado`}
+            </div>
+            <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => copy(json, 'json')}
+                style={{
+                  background: 'transparent',
+                  color: '#f3f5f7',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '10px',
+                  padding: '0.7rem 1.2rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {copied === 'json' ? 'Copiado' : 'Copiar JSON'}
+              </button>
+              <button
+                onClick={() => copy(window.location.href, 'link')}
+                style={{
+                  background: 'transparent',
+                  color: '#f3f5f7',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '10px',
+                  padding: '0.7rem 1.2rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {copied === 'link' ? 'Copiado' : 'Compartilhar link'}
+              </button>
+              <button
+                onClick={download}
+                style={{
+                  background: '#2d74ff',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '0.8rem 1.4rem',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                }}
+              >
+                Baixar a configuração
+              </button>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '1.6rem', color: '#d8dee6', fontSize: '1.05rem' }}>
+            Selecione pelo menos um item para montar uma configuração.
+          </div>
+
+          <div style={{ marginTop: '2rem', color: '#d8dee6', fontSize: '1.05rem', lineHeight: 1.7 }}>
+            Baixe a configuração e depois execute isso em uma janela elevada do PowerShell:
+          </div>
+
+          <div style={{
+            marginTop: '1rem',
+            background: '#0b1118',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '12px',
+            padding: '0.85rem 1rem',
+            display: 'flex',
+            gap: '0.75rem',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+          }}>
+            <code style={{
+              color: '#ecf1f7',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              fontSize: '0.98rem',
+            }}>
+              {buildCommand}
+            </code>
+            <button
+              onClick={() => copy(buildCommand, 'command')}
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: '10px',
+                padding: '0.7rem 1rem',
+                cursor: 'pointer',
+                minWidth: '110px',
+              }}
+            >
+              {copied === 'command' ? 'Copiado' : 'Cópia'}
+            </button>
           </div>
         </div>
       </div>
-    `;
-
-    const downloadBtn = app.querySelector('.qc-btn.primary');
-    const textarea = app.querySelector('textarea');
-    if (downloadBtn && textarea) {
-      downloadBtn.onclick = () => {
-        const blob = new Blob([textarea.value], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'winutil-config.json';
-        a.click();
-        URL.revokeObjectURL(url);
-      };
-    }
-  }
-</script>
-
-- Share link keeps the same selection in a browser URL for quick reuse.
-- Download config generates a JSON file that can be run with `-Config` in an elevated PowerShell window.
-- The generated command uses the WinUtil release tied to the catalog, so older or newer keys remain compatible with that exact version.
+    </div>
+  );
+}
